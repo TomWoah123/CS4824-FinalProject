@@ -9,71 +9,65 @@ testing_data = pd.read_csv('./datasets/test.csv')
 testing_data_without_label = testing_data.drop('label', axis=1)
 testing_data_labels = testing_data.label
 
+
+def rectified_linear_unit(z_values):
+    relu = np.maximum(z_values, 0)
+    relu_derivative = np.array(z_values > 0, dtype=int)
+    return relu, relu_derivative
+
+
+def softmax(output_values):
+    return np.exp(output_values) / sum(np.exp(output_values))
+
+
+def encoding(y_values):
+    one_hot_y = np.zeros((y_values.size, 10))
+    one_hot_y[np.arange(y_values.size), y_values] = 1
+    one_hot_y = one_hot_y.T
+    return one_hot_y
+
+
+scale = lambda x: x / 255
 train_data_X = np.array(training_data_without_label).T
+train_data_X = scale(train_data_X)
+d, n = train_data_X.shape  # d = 784, n = 38000
 train_data_Y = np.array(training_data_labels)
 
+# Neural network with three layers: Input layer (784 nodes), Hidden layer (512 nodes), and Output layer (10 nodes)
+alpha = 0.1
+input_to_hidden_layer_weights = np.random.rand(512, d) - 0.5  # (512 x 784)
+input_to_hidden_layer_bias_terms = np.random.rand(512, 1) - 0.5  # (512 x 1)
+hidden_to_output_layer_weights = np.random.rand(10, 512) - 0.5  # (10 x 512)
+hidden_to_output_layer_bias_terms = np.random.rand(10, 1) - 0.5  # (10 x 1)
 
-def init_network():
-    input_layer_weights = np.random.rand(10, 784) - 0.5
-    input_layer_bias_terms = np.random.rand(10, 1) - 0.5
-    hidden_layer_weights = np.random.rand(10, 10) - 0.5
-    hidden_layer_bias_terms = np.random.rand(10, 1) - 0.5
-    return input_layer_weights, input_layer_bias_terms, hidden_layer_weights, hidden_layer_bias_terms
+for i in range(500):
+    # Forward propagation first layer
+    z = input_to_hidden_layer_weights.dot(train_data_X) + input_to_hidden_layer_bias_terms  # (512 x 784) * (784 x 38000) = (512 x 38000)
+    activation, activation_derivative = rectified_linear_unit(z)  # 512 x 38000
 
+    # Forward propagation second layer
+    output = hidden_to_output_layer_weights.dot(activation) + hidden_to_output_layer_bias_terms  # (10 x 512) * (512 x 38000) = (10 x 38000)
+    output = softmax(output)  # 10 x 38000
 
-def sigmoid(z):
-    return 1 / (1 + np.exp(z))
+    # Backpropagation second layer
+    dz_output = output - encoding(train_data_Y)  # 10 x 38000
+    dweights_hidden_to_output = 1 / n * dz_output.dot(activation.T)  # (10 x 38000) * (38000 x 512) = (10 x 512)
+    dbias_hidden_to_output = 1 / n * np.sum(dz_output, axis=1).reshape(10, 1)  # (10 x 1)
 
+    # Backpropagation first layer
+    dz_activation = hidden_to_output_layer_weights.T.dot(dz_output) * activation_derivative  # (512 x 10) * (10 x 38000) = (512 x 38000)
+    dweights_input_to_hidden = 1 / n * dz_activation.dot(train_data_X.T)  # (512 x 38000) * (38000 x 784) = (512 x 784)
+    dbias_input_to_hidden = 1 / n * np.sum(dz_activation, axis=1).reshape(512, 1)  # (512 x 1)
 
-def derivative_sigmoid(z):
-    return sigmoid(z) * (1 - sigmoid(z))
+    # Updating parameters
+    input_to_hidden_layer_weights = input_to_hidden_layer_weights - alpha * dweights_input_to_hidden  # (512 x 784)
+    input_to_hidden_layer_bias_terms = input_to_hidden_layer_bias_terms - alpha * dbias_input_to_hidden  # (512 x 1)
+    hidden_to_output_layer_weights = hidden_to_output_layer_weights - alpha * dweights_hidden_to_output  # (10 x 512)
+    hidden_to_output_layer_bias_terms = hidden_to_output_layer_bias_terms - alpha * dbias_hidden_to_output  # (10 x 1)
 
-
-def softmax(output):
-    return np.exp(output) / np.sum(np.exp(output))
-
-
-def forward_propagation(input_layer_weights, input_layer_bias_terms, hidden_layer_weights, hidden_layer_bias_terms,
-                        data):
-    z_1 = input_layer_weights.dot(data) + input_layer_bias_terms
-    activation_1 = sigmoid(z_1)
-    z_2 = hidden_layer_weights.dot(activation_1) + hidden_layer_bias_terms
-    activation_2 = softmax(z_2)
-    return z_1, activation_1, z_2, activation_2
-
-
-def backward_propagation(z_1, activation_1, z_2, activation_2, input_layer_weights, hidden_layer_weights, x, y):
-    output_vector = np.zeros((y.size, 10))
-    output_vector[np.arange(y.size), y] = 1
-    output_vector = output_vector.T
-    dz_2 = activation_2 - output_vector
-    dw_2 = 1 / y.size * dz_2.dot(activation_1.T)
-    db_2 = 1 / y.size * np.sum(dz_2)
-    dz_1 = hidden_layer_weights.T.dot(dz_2) * derivative_sigmoid(z_1)
-    dw_1 = 1 / y.size * dz_1.dot(x.T)
-    db_1 = 1 / y.size * np.sum(dz_1)
-    return dw_1, db_1, dw_2, db_2
-
-
-def gradient_descent(x, y):
-    alpha = 0.1
-    input_layer_weights, input_layer_bias_terms, hidden_layer_weights, hidden_layer_bias_terms = init_network()
-    for i in range(500):
-        z_1, activation_1, z_2, activation_2 = forward_propagation(input_layer_weights, input_layer_bias_terms,
-                                                                   hidden_layer_weights, hidden_layer_bias_terms, x)
-        dw_1, db_1, dw_2, db_2 = backward_propagation(z_1, activation_1, z_2, activation_2,
-                                                      input_layer_weights, hidden_layer_weights, x, y)
-        input_layer_weights = input_layer_weights - alpha * dw_1
-        input_layer_bias_terms = input_layer_bias_terms - alpha * db_1
-        hidden_layer_weights = hidden_layer_weights - alpha * dw_2
-        hidden_layer_bias_terms = hidden_layer_bias_terms - alpha * db_2
-        if i % 10 == 0:
-            print("Iteration: ", i)
-            predictions = np.argmax(activation_2, axis=0)
-            print(predictions, y)
-            accuracy = np.sum(predictions == y) / y.size
-            print(accuracy)
-    return input_layer_weights, input_layer_bias_terms, hidden_layer_weights, hidden_layer_bias_terms
-
-
-gradient_descent(train_data_X, train_data_Y)
+    if i % 10 == 0:
+        predictions = np.argmax(output, axis=0)
+        accuracy = np.sum(predictions == train_data_Y) / train_data_Y.size
+        print("Iteration: ", i)
+        print(predictions, train_data_Y)
+        print("Accuracy: ", accuracy)
