@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-labels = list(range(10))
 training_data = pd.read_csv('./datasets/train.csv')
 training_data_without_label = training_data.drop('label', axis=1)
 training_data_labels = training_data.label
@@ -50,6 +49,8 @@ for i in range(500):
     output = softmax(output)  # 10 x 38000
 
     # Backpropagation second layer
+    # dz_output = (output - encoding(train_data_Y)) / (output * (1 - output))  # 10 x 38000
+    # dweights_hidden_to_output = 1 / n * (output - encoding(train_data_Y)).dot(activation.T)  # (10 x 38000) * (38000 x 512) = (10 x 512)
     dz_output = output - encoding(train_data_Y)  # 10 x 38000
     dweights_hidden_to_output = 1 / n * dz_output.dot(activation.T)  # (10 x 38000) * (38000 x 512) = (10 x 512)
     dbias_hidden_to_output = 1 / n * np.sum(dz_output, axis=1).reshape(10, 1)  # (10 x 1)
