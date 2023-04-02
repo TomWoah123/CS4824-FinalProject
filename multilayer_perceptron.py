@@ -34,12 +34,12 @@ train_data_Y = np.array(training_data_labels)
 
 # Neural network with three layers: Input layer (784 nodes), Hidden layer (512 nodes), and Output layer (10 nodes)
 alpha = 0.1
-input_to_hidden_layer_weights = np.random.rand(1024, d) - 0.5  # (512 x 784)
-input_to_hidden_layer_bias_terms = np.random.rand(1024, 1) - 0.5  # (512 x 1)
-hidden_to_output_layer_weights = np.random.rand(10, 1024) - 0.5  # (10 x 512)
+input_to_hidden_layer_weights = np.random.rand(512, d) - 0.5  # (512 x 784)
+input_to_hidden_layer_bias_terms = np.random.rand(512, 1) - 0.5  # (512 x 1)
+hidden_to_output_layer_weights = np.random.rand(10, 512) - 0.5  # (10 x 512)
 hidden_to_output_layer_bias_terms = np.random.rand(10, 1) - 0.5  # (10 x 1)
 
-for i in range(500):
+for i in range(50):
     # Forward propagation first layer
     z = input_to_hidden_layer_weights.dot(train_data_X) + input_to_hidden_layer_bias_terms  # (512 x 784) * (784 x 38000) = (512 x 38000)
     activation, activation_derivative = rectified_linear_unit(z)  # 512 x 38000
@@ -58,7 +58,7 @@ for i in range(500):
     # Backpropagation first layer
     dz_activation = hidden_to_output_layer_weights.T.dot(dz_output) * activation_derivative  # (512 x 10) * (10 x 38000) = (512 x 38000)
     dweights_input_to_hidden = 1 / n * dz_activation.dot(train_data_X.T)  # (512 x 38000) * (38000 x 784) = (512 x 784)
-    dbias_input_to_hidden = 1 / n * np.sum(dz_activation, axis=1).reshape(1024, 1)  # (512 x 1)
+    dbias_input_to_hidden = 1 / n * np.sum(dz_activation, axis=1).reshape(512, 1)  # (512 x 1)
 
     # Updating parameters
     input_to_hidden_layer_weights = input_to_hidden_layer_weights - alpha * dweights_input_to_hidden  # (512 x 784)
@@ -72,3 +72,23 @@ for i in range(500):
         print("Iteration: ", i)
         print(predictions, train_data_Y)
         print("Accuracy: ", accuracy)
+
+
+print("Finished training.......")
+test_data_X = np.array(testing_data_without_label).T
+test_data_X = scale(test_data_X)
+test_data_Y = np.array(testing_data_labels)
+
+# Forward propagation first layer
+z_test = input_to_hidden_layer_weights.dot(test_data_X) + input_to_hidden_layer_bias_terms  # (512 x 784) * (784 x 38000) = (512 x 38000)
+activation_test, activation_derivative_test = rectified_linear_unit(z_test)  # 512 x 38000
+
+# Forward propagation second layer
+test_output = hidden_to_output_layer_weights.dot(activation_test) + hidden_to_output_layer_bias_terms  # (10 x 512) * (512 x 38000) = (10 x 38000)
+test_output = softmax(test_output)  # 10 x 38000
+
+# Testing Data accuracy
+test_predictions = np.argmax(test_output, axis=0)
+test_accuracy = np.sum(test_predictions == test_data_Y) / test_data_Y.size
+print(test_predictions, test_data_Y)
+print("Accuracy: ", test_accuracy)
