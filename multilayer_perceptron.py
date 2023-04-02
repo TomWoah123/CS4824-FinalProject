@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-labels = list(range(10))
 training_data = pd.read_csv('./datasets/train.csv')
 training_data_without_label = training_data.drop('label', axis=1)
 training_data_labels = training_data.label
@@ -14,6 +13,12 @@ def rectified_linear_unit(z_values):
     relu = np.maximum(z_values, 0)
     relu_derivative = np.array(z_values > 0, dtype=int)
     return relu, relu_derivative
+
+
+def sigmoid(z_values):
+    sigmoid_values = 1 / (1 + np.exp(-z_values))
+    sigmoid_derivatives = sigmoid_values * (1 - sigmoid_values)
+    return sigmoid_values, sigmoid_derivatives
 
 
 def softmax(output_values):
@@ -57,11 +62,11 @@ for i in range(500):
     output = softmax(output)  # 10 x 38000
 
     # Backpropagation third layer
-    dz_output = output - encoding(train_data_Y)  # 10 x 38000
+    dz_output = 2 * (output - encoding(train_data_Y))  # 10 x 38000
     dweights_hidden_to_output = 1 / n * dz_output.dot(activation_two.T)  # (10 x 38000) * (38000 x 128) = (10 x 128)
     dbias_hidden_to_output = 1 / n * np.sum(dz_output, axis=1).reshape(10, 1)  # (10 x 1)
 
-    # Backpropagation second
+    # Backpropagation second layer
     dz_activation_two = hidden_to_output_layer_weights.T.dot(dz_output) * activation_derivative_two  # (128 x 10) * (10 x 38000) = (128 x 38000)
     dweights_hidden_to_hidden = 1 / n * dz_activation_two.dot(activation_one.T)  # (128 x 38000) * (38000 x 512) = (128 x 512)
     dbias_hidden_to_hidden = 1 / n * np.sum(dz_activation_two, axis=1).reshape(128, 1)  # (128 x 1)
