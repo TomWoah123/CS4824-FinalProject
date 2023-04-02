@@ -34,9 +34,9 @@ train_data_Y = np.array(training_data_labels)
 
 # Neural network with three layers: Input layer (784 nodes), Hidden layer (512 nodes), and Output layer (10 nodes)
 alpha = 0.1
-input_to_hidden_layer_weights = np.random.rand(512, d) - 0.5  # (512 x 784)
-input_to_hidden_layer_bias_terms = np.random.rand(512, 1) - 0.5  # (512 x 1)
-hidden_to_output_layer_weights = np.random.rand(10, 512) - 0.5  # (10 x 512)
+input_to_hidden_layer_weights = np.random.rand(1024, d) - 0.5  # (512 x 784)
+input_to_hidden_layer_bias_terms = np.random.rand(1024, 1) - 0.5  # (512 x 1)
+hidden_to_output_layer_weights = np.random.rand(10, 1024) - 0.5  # (10 x 512)
 hidden_to_output_layer_bias_terms = np.random.rand(10, 1) - 0.5  # (10 x 1)
 
 for i in range(500):
@@ -51,14 +51,14 @@ for i in range(500):
     # Backpropagation second layer
     # dz_output = (output - encoding(train_data_Y)) / (output * (1 - output))  # 10 x 38000
     # dweights_hidden_to_output = 1 / n * (output - encoding(train_data_Y)).dot(activation.T)  # (10 x 38000) * (38000 x 512) = (10 x 512)
-    dz_output = output - encoding(train_data_Y)  # 10 x 38000
+    dz_output = 2 * (output - encoding(train_data_Y))  # 10 x 38000
     dweights_hidden_to_output = 1 / n * dz_output.dot(activation.T)  # (10 x 38000) * (38000 x 512) = (10 x 512)
     dbias_hidden_to_output = 1 / n * np.sum(dz_output, axis=1).reshape(10, 1)  # (10 x 1)
 
     # Backpropagation first layer
     dz_activation = hidden_to_output_layer_weights.T.dot(dz_output) * activation_derivative  # (512 x 10) * (10 x 38000) = (512 x 38000)
     dweights_input_to_hidden = 1 / n * dz_activation.dot(train_data_X.T)  # (512 x 38000) * (38000 x 784) = (512 x 784)
-    dbias_input_to_hidden = 1 / n * np.sum(dz_activation, axis=1).reshape(512, 1)  # (512 x 1)
+    dbias_input_to_hidden = 1 / n * np.sum(dz_activation, axis=1).reshape(1024, 1)  # (512 x 1)
 
     # Updating parameters
     input_to_hidden_layer_weights = input_to_hidden_layer_weights - alpha * dweights_input_to_hidden  # (512 x 784)
