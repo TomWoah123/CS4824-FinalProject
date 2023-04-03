@@ -22,7 +22,7 @@ def sigmoid(z_values):
 
 
 def softmax(output_values):
-    return np.exp(output_values) / sum(np.exp(output_values))
+    return np.exp(output_values) / np.sum(np.exp(output_values), axis=0)
 
 
 def encoding(y_values):
@@ -40,7 +40,7 @@ train_data_Y = np.array(training_data_labels)
 
 # Neural network with four layers: Input layer (784 nodes),
 # Hidden layers (512 nodes and 128 nodes), and Output layer (10 nodes)
-alpha = 0.15
+alpha = 0.10
 input_to_hidden_layer_weights = np.random.rand(512, d) - 0.5  # (512 x 784)
 input_to_hidden_layer_bias_terms = np.random.rand(512, 1) - 0.5  # (512 x 1)
 hidden_to_hidden_layer_weights = np.random.rand(128, 512) - 0.5  # (128 x 512)
@@ -48,7 +48,7 @@ hidden_to_hidden_layer_bias_terms = np.random.rand(128, 1) - 0.5  # (128 x 1)
 hidden_to_output_layer_weights = np.random.rand(10, 128) - 0.5  # (10 x 128)
 hidden_to_output_layer_bias_terms = np.random.rand(10, 1) - 0.5  # (10 x 1)
 
-for i in range(500):
+for i in range(50):
     # Forward propagation first layer
     z_one = input_to_hidden_layer_weights.dot(train_data_X) + input_to_hidden_layer_bias_terms  # (512 x 784) * (784 x 38000) = (512 x 38000)
     activation_one, activation_derivative_one = rectified_linear_unit(z_one)  # 512 x 38000
@@ -90,3 +90,26 @@ for i in range(500):
         print("Iteration: ", i)
         print(predictions, train_data_Y)
         print("Accuracy: ", accuracy)
+
+print("Finished training.......")
+test_data_X = np.array(testing_data_without_label).T
+test_data_X = scale(test_data_X)
+test_data_Y = np.array(testing_data_labels)
+
+# Forward propagation first layer
+z_one_test = input_to_hidden_layer_weights.dot(test_data_X) + input_to_hidden_layer_bias_terms  # (512 x 784) * (784 x 38000) = (512 x 38000)
+activation_one_test, activation_derivative_one_test = rectified_linear_unit(z_one_test)  # 512 x 38000
+
+# Forward propagation second layer
+z_two_test = hidden_to_hidden_layer_weights.dot(activation_one_test) + hidden_to_hidden_layer_bias_terms  # (128 x 512) * (512 x 38000) = (128 x 38000)
+activation_two_test, activation_derivative_two_test = rectified_linear_unit(z_two_test)  # (128 x 38000)
+
+# Forward propagation third layer
+test_output = hidden_to_output_layer_weights.dot(activation_two_test) + hidden_to_output_layer_bias_terms  # (10 x 128) * (128 x 38000) = (10 x 38000)
+test_output = softmax(test_output)  # 10 x 38000
+
+# Testing Data accuracy
+test_predictions = np.argmax(test_output, axis=0)
+test_accuracy = np.sum(test_predictions == test_data_Y) / test_data_Y.size
+print(test_predictions, test_data_Y)
+print("Accuracy: ", test_accuracy)
