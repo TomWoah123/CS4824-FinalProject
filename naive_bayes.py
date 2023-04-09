@@ -1,5 +1,13 @@
 """This module includes methods for training and predicting using naive Bayes."""
 import numpy as np
+import pandas as pd
+
+training_data = pd.read_csv('./datasets/train.csv')
+training_data_without_label = training_data.drop('label', axis=1)
+training_data_labels = training_data.label
+testing_data = pd.read_csv('./datasets/test.csv')
+testing_data_without_label = testing_data.drop('label', axis=1)
+testing_data_labels = testing_data.label
 
 
 def naive_bayes_train(train_data, train_labels):
@@ -57,3 +65,24 @@ def naive_bayes_predict(data, model):
 
     labels = np.argmax(log_class_probs, axis=0).ravel()
     return labels
+
+
+scale = lambda x: 0 if x < 15 else 1
+scale = np.vectorize(scale)
+train_data_X = np.array(training_data_without_label).T
+train_data_X = scale(train_data_X)
+d, n = train_data_X.shape  # d = 784, n = 38000
+train_data_Y = np.array(training_data_labels)
+model = naive_bayes_train(train_data_X, train_data_Y)
+predictions = naive_bayes_predict(train_data_X, model)
+train_accuracy = np.sum(predictions == train_data_Y) / train_data_Y.size
+print(predictions, train_data_Y)
+print("Accuracy: ", train_accuracy)
+
+test_data_X = np.array(testing_data_without_label).T
+test_data_X = scale(test_data_X)
+test_data_Y = np.array(testing_data_labels)
+test_predictions = naive_bayes_predict(test_data_X, model)
+test_accuracy = np.sum(test_predictions == test_data_Y) / test_data_Y.size
+print(test_predictions, test_data_Y)
+print("Accuracy: ", test_accuracy)
