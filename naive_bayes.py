@@ -66,13 +66,14 @@ def naive_bayes_output():
     testing_data_without_label = testing_data.drop('label', axis=1)
     testing_data_labels = testing_data.label
 
-    scale = lambda x: 0 if x < 15 else 1
+    scale = lambda x: 0 if x < 10 else 1
     scale = np.vectorize(scale)
     train_data_X = np.array(training_data_without_label).T
     train_data_X = scale(train_data_X)
     d, n = train_data_X.shape  # d = 784, n = 38000
     train_data_Y = np.array(training_data_labels)
     model = naive_bayes_train(train_data_X, train_data_Y)
+
     predictions = naive_bayes_predict(train_data_X, model)
     train_accuracy = np.sum(predictions == train_data_Y) / train_data_Y.size
     # print(predictions, train_data_Y)
@@ -85,4 +86,4 @@ def naive_bayes_output():
     test_accuracy = np.sum(test_predictions == test_data_Y) / test_data_Y.size
     # print(test_predictions, test_data_Y)
     print("Testing data accuracy: ", "{:.5f}".format(test_accuracy))
-    return {'test_accuracy': test_accuracy}
+    return {'train_accuracy': train_accuracy, 'test_accuracy': test_accuracy}
